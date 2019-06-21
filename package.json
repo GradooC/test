@@ -1,0 +1,12 @@
+{
+  "name": "slot-game",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "scripts": {},
+  "keywords": [],
+  "author": "Evgeniy Shchemelev",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {}
+}
