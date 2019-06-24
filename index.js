@@ -3,6 +3,11 @@ if (!PIXI.utils.isWebGLSupported()) {
   type = 'canvas';
 }
 
+const randomSprite = texturesArr => {
+  const textureIndex = Math.floor(Math.random() * texturesArr.length);
+  return new Sprite(texturesArr[textureIndex]);
+};
+
 // Aliases
 const {
   Application,
@@ -31,14 +36,14 @@ document.body.appendChild(app.view);
 
 loader
   .add([
-    //images loading
+    // Images loading
     'assets\\img\\slotOverlay.png',
     'assets\\img\\winningFrameBackground.jpg',
     'assets\\img\\btn_spin_pressed.png',
     'assets\\img\\btn_spin_normal.png',
     'assets\\img\\btn_spin_hover.png',
     'assets\\img\\btn_spin_disable.png',
-    // symbols loading
+    // Symbols loading
     'assets\\img\\symbols\\01.png',
     'assets\\img\\symbols\\02.png',
     'assets\\img\\symbols\\03.png',
@@ -86,59 +91,33 @@ function setup() {
 
   const reelContainer = new Container();
 
-  // Populate reel
-  const test = new Array(VISIBLE_SYMBOLS).keys();
-  console.log("TCL: setup -> test", test)
-  // .forEach((texture, index) => {
-  //   const sprite = new Sprite(texture);
-  //   sprite.y = index * SYMBOL_SIZE;
-  //   reelContainer.addChild(sprite);
-  // });
+  const reel = {
+    symbols: []
+  };
+  
+  // Populate reel by symbols
+  [...new Array(VISIBLE_SYMBOLS)].forEach((_, index) => {
+    const symbol = randomSprite(symbolsTextures);
+    symbol.y = index * SYMBOL_SIZE;
+    reel.symbols.push(symbol);
+    reelContainer.addChild(symbol);
+  });
 
   app.stage.addChild(reelContainer);
 
-  // Build the reels
-  // const reels = [];
-  // const reelContainer = new PIXI.Container();
-  // for (let i = 0; i < 5; i++) {
-  //   const rc = new PIXI.Container();
-  //   rc.x = i * REEL_WIDTH;
-  //   reelContainer.addChild(rc);
-
-  //   const reel = {
-  //     container: rc,
-  //     symbols: [],
-  //     position: 0,
-  //     previousPosition: 0,
-  //     blur: new PIXI.filters.BlurFilter()
-  //   };
-  //   reel.blur.blurX = 0;
-  //   reel.blur.blurY = 0;
-  //   rc.filters = [reel.blur];
-
-  //   // Build the symbols
-  //   for (let j = 0; j < 4; j++) {
-  //     const symbol = new PIXI.Sprite(
-  //       symbolsTextures[Math.floor(Math.random() * symbolsTextures.length)]
-  //     );
-  //     // Scale the symbol to fit symbol area.
-  //     symbol.y = j * SYMBOL_SIZE;
-  //     symbol.scale.x = symbol.scale.y = Math.min(
-  //       SYMBOL_SIZE / symbol.width,
-  //       SYMBOL_SIZE / symbol.height
-  //     );
-  //     symbol.x = Math.round((SYMBOL_SIZE - symbol.width) / 2);
-  //     reel.symbols.push(symbol);
-  //     rc.addChild(symbol);
-  //   }
-  //   reels.push(reel);
-  // }
-  // app.stage.addChild(reelContainer);
-
-  //Start the game loop
-  // app.ticker.add(delta => gameLoop(delta));
-
-  // function gameLoop(delta) {
-  //   tenSymbol.y += 1 + delta;
-  // }
+  app.ticker.add(delta => {
+    console.log(reel.symbols)
+    reel.symbols.forEach((symbol, index) => {
+      console.log(symbol.y)
+      symbol.y += 5;
+      if (symbol.y > 1200) {
+        const newSymbol = randomSprite(symbolsTextures);
+        newSymbol.y = -100;
+        reelContainer.addChild(newSymbol);
+        // reelContainer.removeChild(symbol);
+        reel.symbols.unshift(newSymbol);
+        reel.symbols.pop();
+      }
+    });
+  });
 }

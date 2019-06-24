@@ -8,5 +8,7 @@
   "author": "Evgeniy Shchemelev",
   "license": "ISC",
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "eslint": "^6.0.0"
+  }
 }
