@@ -3,7 +3,7 @@ if (!PIXI.utils.isWebGLSupported()) {
   type = 'canvas';
 }
 
-const randomSprite = texturesArr => {
+const getRandomSprite = texturesArr => {
   const textureIndex = Math.floor(Math.random() * texturesArr.length);
   return new Sprite(texturesArr[textureIndex]);
 };
@@ -21,15 +21,15 @@ const SCREEN_WIDTH = 1200;
 const SCREEN_HEIGHT = 800;
 const REELS_AMOUNT = 5;
 const VISIBLE_SYMBOLS = 4;
-
-// const REEL_WIDTH = SCREEN_WIDTH / 5;
-// const SYMBOL_HEIGHT = SCREEN_HEIGHT / 3;
-
-const REEL_WIDTH = 160;
-const SYMBOL_SIZE = 150;
+const MARGIN_VERTICAL = 50;
+const MARGIN_HORIZONTAL = 50;
+const REEL_WIDTH = (SCREEN_WIDTH - MARGIN_HORIZONTAL * 2) / REELS_AMOUNT;
+const SYMBOL_SIZE = (SCREEN_HEIGHT - MARGIN_VERTICAL * 2) / VISIBLE_SYMBOLS;
+const SPEED_BASE = 5;
+const allReels = [];
 
 //Create a Pixi Application
-const app = new Application({ width: SCREEN_HEIGHT, height: SCREEN_HEIGHT });
+const app = new Application({ width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
 
 //Add the canvas that Pixi automatically created for you to the HTML document
 document.body.appendChild(app.view);
@@ -64,13 +64,13 @@ function setup() {
   const background = new Sprite(
     resources['assets\\img\\winningFrameBackground.jpg'].texture
   );
-  background.width = 1200;
-  background.height = 800;
+  background.width = SCREEN_WIDTH;
+  background.height = SCREEN_HEIGHT;
   app.stage.addChild(background);
 
   const overlay = new Sprite(resources['assets\\img\\slotOverlay.png'].texture);
-  overlay.width = 1200;
-  overlay.height = 800;
+  overlay.width = SCREEN_WIDTH;
+  overlay.height =  SCREEN_HEIGHT;
   app.stage.addChild(overlay);
 
   const symbolsTextures = [
@@ -89,35 +89,43 @@ function setup() {
     resources['assets\\img\\symbols\\13.png'].texture
   ];
 
-  const reelContainer = new Container();
+  // Create reels
+  [...new Array(REELS_AMOUNT)].forEach((_, reelIndex) => {
+    const reelContainer = new Container();
+    reelContainer.y = MARGIN_VERTICAL;
+    reelContainer.x = MARGIN_HORIZONTAL + REEL_WIDTH * reelIndex;
 
-  const reel = {
-    symbols: []
-  };
-  
-  // Populate reel by symbols
-  [...new Array(VISIBLE_SYMBOLS)].forEach((_, index) => {
-    const symbol = randomSprite(symbolsTextures);
-    symbol.y = index * SYMBOL_SIZE;
-    reel.symbols.push(symbol);
-    reelContainer.addChild(symbol);
+    const reel = {
+      container: reelContainer,
+      symbols: []
+    };
+    allReels.push(reel);
+
+    // Populate reel by symbols
+    [...new Array(VISIBLE_SYMBOLS)].forEach((_, symbolIndex) => {
+      const symbol = getRandomSprite(symbolsTextures);
+      symbol.y = symbolIndex * SYMBOL_SIZE;
+      reel.symbols.push(symbol);
+      reelContainer.addChild(symbol);
+    });
+
+    app.stage.addChild(reelContainer);
   });
 
-  app.stage.addChild(reelContainer);
-
   app.ticker.add(delta => {
-    console.log(reel.symbols)
-    reel.symbols.forEach((symbol, index) => {
-      console.log(symbol.y)
-      symbol.y += 5;
-      if (symbol.y > 1200) {
-        const newSymbol = randomSprite(symbolsTextures);
-        newSymbol.y = -100;
-        reelContainer.addChild(newSymbol);
-        // reelContainer.removeChild(symbol);
-        reel.symbols.unshift(newSymbol);
-        reel.symbols.pop();
-      }
+    allReels.forEach((reel, reelIndex) => {
+      reel.symbols.forEach((symbol, symbolIndex) => {
+        console.log(symbol.y);
+        symbol.y += SPEED_BASE + SPEED_BASE * reelIndex;
+        if (symbol.y >  SCREEN_HEIGHT) {
+          const newSymbol = getRandomSprite(symbolsTextures);
+          newSymbol.y = -SYMBOL_SIZE;
+          reel.container.addChild(newSymbol);
+          reel.container.removeChild(symbol);
+          reel.symbols.unshift(newSymbol);
+          reel.symbols.pop();
+        }
+      });
     });
   });
 }
