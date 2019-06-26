@@ -3,9 +3,24 @@ if (!PIXI.utils.isWebGLSupported()) {
   type = 'canvas';
 }
 
-const getRandomSprite = texturesArr => {
-  const textureIndex = Math.floor(Math.random() * texturesArr.length);
-  return new Sprite(texturesArr[textureIndex]);
+const getRandomSprite = () => {
+  const symbolsTextures = [
+    resources['assets\\img\\symbols\\01.png'].texture,
+    resources['assets\\img\\symbols\\02.png'].texture,
+    resources['assets\\img\\symbols\\03.png'].texture,
+    resources['assets\\img\\symbols\\04.png'].texture,
+    resources['assets\\img\\symbols\\05.png'].texture,
+    resources['assets\\img\\symbols\\06.png'].texture,
+    resources['assets\\img\\symbols\\07.png'].texture,
+    resources['assets\\img\\symbols\\08.png'].texture,
+    resources['assets\\img\\symbols\\09.png'].texture,
+    resources['assets\\img\\symbols\\10.png'].texture,
+    resources['assets\\img\\symbols\\11.png'].texture,
+    resources['assets\\img\\symbols\\12.png'].texture,
+    resources['assets\\img\\symbols\\13.png'].texture
+  ];
+  const textureIndex = Math.floor(Math.random() * symbolsTextures.length);
+  return new Sprite(symbolsTextures[textureIndex]);
 };
 
 // Aliases
@@ -19,14 +34,19 @@ const {
 
 const SCREEN_WIDTH = 1200;
 const SCREEN_HEIGHT = 800;
+const BTN_SIZE = 150;
 const REELS_AMOUNT = 5;
-const VISIBLE_SYMBOLS = 4;
+const VISIBLE_SYMBOLS = 6;
 const MARGIN_VERTICAL = 50;
 const MARGIN_HORIZONTAL = 50;
 const REEL_WIDTH = (SCREEN_WIDTH - MARGIN_HORIZONTAL * 2) / REELS_AMOUNT;
-const SYMBOL_SIZE = (SCREEN_HEIGHT - MARGIN_VERTICAL * 2) / VISIBLE_SYMBOLS;
-const SPEED_BASE = 5;
+const SYMBOL_SIZE = (SCREEN_HEIGHT - MARGIN_VERTICAL * 2) / (VISIBLE_SYMBOLS - 2);
+const SPEED_BASE = 10;
 const allReels = [];
+let activeReels = [];
+let called = false;
+let state;
+let startTime;
 
 //Create a Pixi Application
 const app = new Application({ width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
@@ -61,33 +81,28 @@ loader
   .load(setup);
 
 function setup() {
-  const background = new Sprite(
-    resources['assets\\img\\winningFrameBackground.jpg'].texture
-  );
+  //Background setup
+  const background = new Sprite(resources['assets\\img\\winningFrameBackground.jpg'].texture);
   background.width = SCREEN_WIDTH;
   background.height = SCREEN_HEIGHT;
   app.stage.addChild(background);
 
+  // OverLay setup
   const overlay = new Sprite(resources['assets\\img\\slotOverlay.png'].texture);
   overlay.width = SCREEN_WIDTH;
-  overlay.height =  SCREEN_HEIGHT;
+  overlay.height = SCREEN_HEIGHT;
   app.stage.addChild(overlay);
 
-  const symbolsTextures = [
-    resources['assets\\img\\symbols\\01.png'].texture,
-    resources['assets\\img\\symbols\\02.png'].texture,
-    resources['assets\\img\\symbols\\03.png'].texture,
-    resources['assets\\img\\symbols\\04.png'].texture,
-    resources['assets\\img\\symbols\\05.png'].texture,
-    resources['assets\\img\\symbols\\06.png'].texture,
-    resources['assets\\img\\symbols\\07.png'].texture,
-    resources['assets\\img\\symbols\\08.png'].texture,
-    resources['assets\\img\\symbols\\09.png'].texture,
-    resources['assets\\img\\symbols\\10.png'].texture,
-    resources['assets\\img\\symbols\\11.png'].texture,
-    resources['assets\\img\\symbols\\12.png'].texture,
-    resources['assets\\img\\symbols\\13.png'].texture
-  ];
+  // Play button setup
+  const button = new Sprite(resources['assets\\img\\btn_spin_normal.png'].texture);
+  button.interactive = true;
+  button.width = BTN_SIZE;
+  button.height = BTN_SIZE;
+  button.position.set(SCREEN_WIDTH - BTN_SIZE, SCREEN_HEIGHT - BTN_SIZE);
+  button.addListener('pointerdown', () => {
+    activeReels = [...allReels];
+  });
+  app.stage.addChild(button);
 
   // Create reels
   [...new Array(REELS_AMOUNT)].forEach((_, reelIndex) => {
@@ -101,31 +116,91 @@ function setup() {
     };
     allReels.push(reel);
 
-    // Populate reel by symbols
+    // Populate reels by symbols
     [...new Array(VISIBLE_SYMBOLS)].forEach((_, symbolIndex) => {
-      const symbol = getRandomSprite(symbolsTextures);
-      symbol.y = symbolIndex * SYMBOL_SIZE;
+      const symbol = getRandomSprite();
+      symbol.y = symbolIndex * SYMBOL_SIZE - SYMBOL_SIZE;
       reel.symbols.push(symbol);
       reelContainer.addChild(symbol);
     });
 
     app.stage.addChild(reelContainer);
   });
+}
 
-  app.ticker.add(delta => {
-    allReels.forEach((reel, reelIndex) => {
-      reel.symbols.forEach((symbol, symbolIndex) => {
-        console.log(symbol.y);
-        symbol.y += SPEED_BASE + SPEED_BASE * reelIndex;
-        if (symbol.y >  SCREEN_HEIGHT) {
-          const newSymbol = getRandomSprite(symbolsTextures);
-          newSymbol.y = -SYMBOL_SIZE;
-          reel.container.addChild(newSymbol);
-          reel.container.removeChild(symbol);
-          reel.symbols.unshift(newSymbol);
-          reel.symbols.pop();
-        }
+// Play function
+const play = delta => {
+  // Stopping reels
+  // activeReels = [...allReels];
+  activeReels.forEach((reel, reelIndex) => {
+    setTimeout(() => {
+      const removedReel = activeReels.shift();
+
+      // Tweening symbols to specific position
+      removedReel.symbols.forEach((symbol, symbolIndex) => {
+        createjs.Tween.get(symbol).to(
+          { y: SYMBOL_SIZE * symbolIndex - SYMBOL_SIZE },
+          1000,
+          createjs.Ease.getBackOut(5)
+        );
       });
+    }, 1000 + 1000 * reelIndex);
+  });
+
+  activeReels.forEach((reel, reelIndex) => {
+    reel.symbols.forEach((symbol, symbolIndex) => {
+      symbol.y += SPEED_BASE * (1 + reelIndex);
+      // Delete old and add new symbols
+      if (symbol.y > SYMBOL_SIZE * 5) {
+        const newSymbol = getRandomSprite();
+        newSymbol.y = -SYMBOL_SIZE;
+        reel.container.addChild(newSymbol);
+        reel.container.removeChild(symbol);
+        // Update symbols array
+        reel.symbols.unshift(newSymbol);
+        reel.symbols.pop();
+      }
     });
   });
-}
+};
+
+// End function
+// const end = () => {
+//   if (called) return;
+//   called = true;
+//   // Tweening symbols to specific position
+//   allReels.forEach(reel => {
+//     reel.symbols.forEach((symbol, symbolIndex) => {
+//       createjs.Tween.get(symbol).to({ y: SYMBOL_SIZE * symbolIndex - SYMBOL_SIZE }, 1000, createjs.Ease.getBackOut(5));
+//       // .call(handleComplete);
+//     });
+//   });
+// };
+
+// const callOnce = fn => {
+//   return () => {
+//     let called = false;
+//     return () => {
+//       if (called) return;
+//       called = true;
+//       fn();
+//     };
+//   };
+// };
+
+// const callOnceEnd = callOnce(end);
+
+state = play;
+
+const gameLoop = delta => {
+  // setTimeout(() => {
+  //   console.log('!!!!!!');
+  //   state = end;
+  // }, 3000);
+
+  state(delta);
+};
+
+startTime = new Date();
+
+app.ticker.add(delta => gameLoop(delta));

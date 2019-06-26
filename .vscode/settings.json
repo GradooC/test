@@ -1,6 +1,8 @@
 {
   "cSpell.words": [
-    "PIXI"
+    "PIXI",
+    "Tweening",
+    "createjs"
   ],
   "prettier.singleQuote": true
 }
